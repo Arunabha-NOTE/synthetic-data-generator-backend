@@ -1,28 +1,58 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+import { Upload } from './constants.js';
+
+
+// Replace with your MongoDB connection string
+
+
+mongoose.connect(`${process.env.MONGODB_URI}/${Upload}`, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('MongoDB connected successfully.'))
+    .catch(err => console.error(err));
 
 const app = express();
-const port = process.env.PORT || 3000;
 
-// ... (previous code)
+// Configure middleware to parse JSON data
+app.use(bodyParser.json());
 
-app.post('/api/upload-json', bodyParser.json(), async (req, res) => {
+// Define your Mongoose schema for the data you want to store from the JSON
+const MyDataSchema = new mongoose.Schema({
+  // Define your data fields here (e.g., name, email, etc.)
+  field_name: { type: String, required: true },
+  data_type: { type: String, required: true },
+  Max_value: { type: Number }, // Assuming Max_value is a number
+  Min_value: { type: Number }, // Assuming Min_value is a number
+  Any_probabilistic_distributution: { type: String },
+  Remarks: { type: String },
+});
+
+const MyDataModel = mongoose.model('MyData', MyDataSchema);
+
+// Route for handling JSON upload using PUT request
+app.put('/api/upload-json', async (req, res) => {
   try {
-    const data = req.body; // Access uploaded JSON data from request body
+    if (!req.body) {
+      return res.status(400).json({ message: 'No JSON data provided' });
+    }
 
-    // Validate data (optional)
-    // You can add validation logic here to ensure the uploaded data
-    // conforms to your expected schema
+    const parsedData = req.body; // JSON data is already parsed
+    const savedData = [];
 
-    const jsonData = new JsonData(data); // Create new mongoose document
-    await jsonData.save(); // Save data to MongoDB
+    // Loop through each data object and save to MongoDB
+    for (const row of parsedData) {
+      const newData = new MyDataModel(row);
 
-    res.status(201).json({ message: 'Data uploaded successfully!' });
-  } catch (error) {
-    console.error('Error uploading data:', error);
-    res.status(500).json({ message: 'Error uploading data' }); // Handle errors
+      await newData.save();
+      savedData.push(newData);
+    }
+
+    res.status(201).json({ message: 'Data uploaded successfully', data: savedData });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error uploading data', error: err.message });
   }
 });
 
+const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server listening on port ${port}`));
