@@ -4,12 +4,15 @@ const mongoose = require('mongoose');
 import { Upload } from './constants.js';
 
 
-// Replace with your MongoDB connection string
-
-
-mongoose.connect(`${process.env.MONGODB_URI}/${Upload}`, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('MongoDB connected successfully.'))
-    .catch(err => console.error(err));
+(async () => {
+  try {
+    await mongoose.connect(`${process.env.MONGODB_URI}/${Upload}`, { useNewUrlParser: true, useUnifiedTopology: true });
+    console.log('MongoDB connected successfully.');
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+})();
 
 const app = express();
 
@@ -35,22 +38,29 @@ app.put('/api/upload-json', async (req, res) => {
     if (!req.body) {
       return res.status(400).json({ message: 'No JSON data provided' });
     }
-
     const parsedData = req.body; // JSON data is already parsed
     const savedData = [];
-
     // Loop through each data object and save to MongoDB
     for (const row of parsedData) {
       const newData = new MyDataModel(row);
-
       await newData.save();
       savedData.push(newData);
     }
-
     res.status(201).json({ message: 'Data uploaded successfully', data: savedData });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Error uploading data', error: err.message });
+  }
+});
+
+// Route for fetching all data from MongoDB
+app.get('/api/data', async (req, res) => {
+  try {
+    const data = await MyDataModel.find(); // Fetch all data from the collection
+    res.status(200).json({ message: 'Data fetched successfully', data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Error fetching data', error: err.message });
   }
 });
 
