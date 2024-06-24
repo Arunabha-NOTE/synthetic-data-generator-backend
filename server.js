@@ -33,7 +33,7 @@ const MyDataSchema = new mongoose.Schema({
   min_value: { type: Number },
   any_probabilistic_distribution: { type: String },
   remarks: { type: String }
-}, { collection: 'mydatas' }); // Adjust collection name if necessary
+}, {collection: 'mydatas'});
 
 const MyDataModel = mongoose.model('MyData', MyDataSchema);
 
