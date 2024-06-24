@@ -1,54 +1,54 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-import { Upload } from './constants.js';
+const cors = require('cors');
+require('dotenv').config();
 
+const Upload = "upload";
 
 (async () => {
   try {
     await mongoose.connect(`${process.env.MONGODB_URI}/${Upload}`, { useNewUrlParser: true, useUnifiedTopology: true });
     console.log('MongoDB connected successfully.');
   } catch (err) {
-    console.error(err);
+    console.error('MongoDB connection error:', err);
     process.exit(1);
   }
 })();
 
 const app = express();
 
+// Use CORS middleware to allow all origins (adjust as needed)
+app.use(cors());
+
 // Configure middleware to parse JSON data
 app.use(bodyParser.json());
 
 // Define your Mongoose schema for the data you want to store from the JSON
 const MyDataSchema = new mongoose.Schema({
-  // Define your data fields here (e.g., name, email, etc.)
+  id: { type: Number, required: true },
   field_name: { type: String, required: true },
   data_type: { type: String, required: true },
-  Max_value: { type: Number }, // Assuming Max_value is a number
-  Min_value: { type: Number }, // Assuming Min_value is a number
-  Any_probabilistic_distributution: { type: String },
-  Remarks: { type: String },
-});
+  max_value: { type: Number },
+  min_value: { type: Number },
+  any_probabilistic_distribution: { type: String },
+  remarks: { type: String }
+}, { collection: 'mydatas' }); // Adjust collection name if necessary
 
 const MyDataModel = mongoose.model('MyData', MyDataSchema);
 
-// Route for handling JSON upload using PUT request
-app.put('/api/upload-json', async (req, res) => {
+// Route for handling JSON upload using POST request
+app.post('/api/upload-json', async (req, res) => {
   try {
-    if (!req.body) {
+    if (!req.body || req.body.length === 0) {
       return res.status(400).json({ message: 'No JSON data provided' });
     }
     const parsedData = req.body; // JSON data is already parsed
-    const savedData = [];
-    // Loop through each data object and save to MongoDB
-    for (const row of parsedData) {
-      const newData = new MyDataModel(row);
-      await newData.save();
-      savedData.push(newData);
-    }
+    const savedData = await MyDataModel.insertMany(parsedData); // Use insertMany for array of data
+
     res.status(201).json({ message: 'Data uploaded successfully', data: savedData });
   } catch (err) {
-    console.error(err);
+    console.error('Error uploading data:', err);
     res.status(500).json({ message: 'Error uploading data', error: err.message });
   }
 });
@@ -59,7 +59,7 @@ app.get('/api/data', async (req, res) => {
     const data = await MyDataModel.find(); // Fetch all data from the collection
     res.status(200).json({ message: 'Data fetched successfully', data });
   } catch (err) {
-    console.error(err);
+    console.error('Error fetching data:', err);
     res.status(500).json({ message: 'Error fetching data', error: err.message });
   }
 });
