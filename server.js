@@ -55,9 +55,9 @@ app.post('/api/upload-json', async (req, res) => {
 
 // Route for fetching all data from MongoDB
 app.get('/api/data', async (req, res) => {
-  try {
-    const data = await MyDataModel.find(); // Fetch all data from the collection
-    res.status(200).json({ message: 'Data fetched successfully', data });
+      try {
+        const data = await MyDataModel.find(); // Fetch all data from the collection
+        res.status(200).json({ message: 'Data fetched successfully', data });
   } catch (err) {
     console.error('Error fetching data:', err);
     res.status(500).json({ message: 'Error fetching data', error: err.message });
